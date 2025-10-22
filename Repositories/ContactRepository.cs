@@ -1,211 +1,158 @@
-﻿using ContactCatalog.Models;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using ContactCatalog.Exceptions;
+using ContactCatalog.Models;
+using ContactCatalog.Services;
+using Microsoft.Extensions.Logging;
 
 namespace ContactCatalog.Repositories
 {
     public class ContactRepository
     {
-        private Dictionary<int, Contact> _contacts = new();
+        private Dictionary<int, Contact> _contacts = new Dictionary<int, Contact>();
+        private HashSet<string> _emails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private ILogger<ContactRepository> _logger;
+
+
+        public ContactRepository(Dictionary<int, Contact> contacts,
+                         HashSet<string> emails,
+                         ILogger<ContactRepository> logger)
+        {
+            _contacts = contacts;
+            _emails = emails;
+            _logger = logger;
+        }
 
         public void SaveContact(Contact contact)
         {
-            Console.Write("Enter contact Id: ");
-            string idToBeAdded = Console.ReadLine();
-            if (!int.TryParse(idToBeAdded, out int contactId))
+            if (_contacts.ContainsKey(contact.Id))
             {
-                Console.WriteLine("Invalid Id. Contact not saved.");
-                return;
+                throw new Exception("ID already exists.");
             }
-
-            if (_contacts.ContainsKey(contactId))
+            else if (_emails.Contains(contact.Email))
             {
-                Console.WriteLine("Contact already exists.");
-                return;
-            }
-
-            contact.Id = contactId;
-
-            Console.Write("Enter contact name: ");
-            string nameToBeAdded = Console.ReadLine();
-            if (string.IsNullOrWhiteSpace(nameToBeAdded))
-            {
-                Console.WriteLine("Name cannot be empty. Try again.");
-                return;
-            }
-            contact.Name = nameToBeAdded;
-
-            Console.Write($"Enter email for {nameToBeAdded}: ");
-            string emailToBeAdded = Console.ReadLine();
-            if (string.IsNullOrWhiteSpace(emailToBeAdded))
-            {
-                Console.WriteLine("Email cannot be empty. Try again.");
-                return;
-            }
-            contact.Email = emailToBeAdded;
-
-            Console.Write("Enter a tag for this contact: ");
-            string tagToBeAdded = Console.ReadLine();
-            if (string.IsNullOrWhiteSpace(tagToBeAdded))
-            {
-                Console.WriteLine("Tag cannot be empty. Try again.");
-                return;
-            }
-            contact.Tags = new List<string> { tagToBeAdded };
-
-            _contacts.Add(contact.Id, contact);
-            Console.WriteLine($"-{contact.Name} has been added to contacts.");
-        }
-
-
-
-
-        public void RemoveContact()
-        {
-            Console.Write("Enter the ID of the contact you want to remove: ");
-            string idInput = Console.ReadLine();
-
-            if (!int.TryParse(idInput, out int idToRemove))
-            {
-                Console.WriteLine("Invalid ID.");
-                return;
-            }
-
-            if (!_contacts.ContainsKey(idToRemove))
-            {
-                Console.WriteLine("Contact doesn't exist.");
-                return;
+                throw new Exception("Email already exists.");
             }
             else
             {
-                Contact contactToRemove = _contacts[idToRemove];
-                _contacts.Remove(idToRemove);
-                Console.WriteLine($"{contactToRemove.Name} has been removed.");
-            }
-
-        }
-
-
-
-        public void ListContacts()
-        {
-            if (_contacts.Count == 0)
-            {
-                Console.WriteLine("No contacts to list.");
-                return;
-            }
-
-            Console.WriteLine("Contacts list:");
-            foreach (var contact in _contacts.Values)
-            {
-                Console.WriteLine($"Id: {contact.Id}, Name: {contact.Name}, Email: {contact.Email}, Tags: {string.Join(", ", contact.Tags)}");
+                _contacts.Add(contact.Id, contact);
+                _emails.Add(contact.Email);
             }
         }
 
-
-        public void UpdateContact()
+        public bool ExistsId(int id)
         {
-            Console.WriteLine("Enter id for the contact you wanna update:");
-            string idInput = Console.ReadLine();
-            if (int.TryParse(idInput, out int idToBeFound))
+            return _contacts.ContainsKey(id);
+        }
+
+        public bool ExistsEmail(string email)
+        {
+            return _emails.Contains(email);
+        }
+
+        public void UpdateContact(int id)
+        {
+            if (_contacts.ContainsKey(id))
             {
-                if (_contacts.ContainsKey(idToBeFound))
+                var contact = _contacts[id];
+                Console.WriteLine($"Updating contact: {contact.Name} ({contact.Email})");
+
+                Console.Write("Enter new name (leave empty to keep it as it is): ");
+                string nameToBeUpdated = Console.ReadLine();
+                if (!string.IsNullOrWhiteSpace(nameToBeUpdated))
                 {
-                    Contact contactToUpdate = _contacts[idToBeFound];
+                    contact.Name = nameToBeUpdated;
+                }
 
-                    Console.WriteLine("What field do you want to update? (Name/Email/Tag)");
-                    string fieldInput = Console.ReadLine();
-                    if (fieldInput.Equals("name", StringComparison.OrdinalIgnoreCase))
+                Console.Write("Enter new email (leave empty to keep it as it is): ");
+                string emailToBeUpdated = Console.ReadLine();
+                if (!string.IsNullOrWhiteSpace(emailToBeUpdated))
+                {
+                    if (_emails.Contains(emailToBeUpdated))
                     {
-                        Console.WriteLine("Please write the new name.");
-                        string nameInput = Console.ReadLine();
-                        if (!string.IsNullOrWhiteSpace(nameInput))
-                        {
-                            contactToUpdate.Name = nameInput;
-                            Console.WriteLine($"Contact name has been updated to {nameInput}.");
-                        }
-                        else
-                        {
-                            Console.WriteLine("Invalid input. I am calling the police!");
-                            return;
-                        }
-                    }
-                    else if (fieldInput.Equals("email", StringComparison.OrdinalIgnoreCase))
-                    {
-                        Console.WriteLine("Please write the new email.");
-                        string emailInput = Console.ReadLine();
-                        if (!string.IsNullOrWhiteSpace(emailInput))
-                        {
-                            contactToUpdate.Email = emailInput;
-                            Console.WriteLine($"Contact email has been updated to {emailInput}.");
-
-                        }
-                        else
-                        {
-                            Console.WriteLine("Invalid input. I am calling the police!");
-                            return;
-                        }
-                    }
-                    else if (fieldInput.Equals("tag", StringComparison.OrdinalIgnoreCase))
-                    {
-                        Console.WriteLine("Do you wanna remove a tag or add one? (Write 'Add' for adding, 'Remove' for removing.");
-                        string choiceForTagInput = Console.ReadLine();
-                        if (!string.IsNullOrWhiteSpace(choiceForTagInput))
-                        {
-                            if (choiceForTagInput.Equals("Add", StringComparison.OrdinalIgnoreCase))
-                            {
-                                Console.WriteLine("Enter tag name to add.");
-                                string tagToAdd = Console.ReadLine();
-                                if (!string.IsNullOrWhiteSpace(tagToAdd))
-                                {
-                                    contactToUpdate.Tags.Add(tagToAdd);
-                                    Console.WriteLine($"Tag '{tagToAdd}' added.");
-                                }
-                                else
-                                {
-                                    Console.WriteLine("Invalid input. I am calling the police!");
-                                    return;
-                                }
-                            }
-                            else if (choiceForTagInput.Equals("Remove", StringComparison.OrdinalIgnoreCase))
-                            {
-                                Console.WriteLine("Enter tag name to remove.");
-                                string tagToRemove = Console.ReadLine();
-                                if (!string.IsNullOrWhiteSpace(tagToRemove))
-                                {
-                                    contactToUpdate.Tags.Remove(tagToRemove);
-                                    Console.WriteLine($"Tag '{tagToRemove}' has been removed.");
-                                }
-                                else
-                                {
-                                    Console.WriteLine("Invalid input. I am calling the police!");
-                                    return;
-                                }
-                            }
-                            else
-                            {
-                                Console.WriteLine("Invalid input. I am calling the police!");
-                                return;
-                            }
-                        }
-                        else
-                        {
-                            Console.WriteLine("Invalid input. I am calling the police!");
-                            return;
-                        }
+                        throw new DuplicateEmailException(emailToBeUpdated);
                     }
                     else
                     {
-                        Console.WriteLine("Invalid input. I am calling the police!");
-                        return;
+                        _emails.Remove(contact.Email);
+                        contact.Email = emailToBeUpdated;
+                        _emails.Add(emailToBeUpdated);
                     }
                 }
+
+                Console.Write("Enter tag to add (leave empty to skip): ");
+                string tagToBeAdded = Console.ReadLine();
+                if (!string.IsNullOrWhiteSpace(tagToBeAdded))
+                {
+                    if (contact.Tags.Contains(tagToBeAdded, StringComparer.OrdinalIgnoreCase))
+                    {
+                        throw new InvalidInputException($"Tag '{tagToBeAdded}' already exists for this contact.");
+                    }
+                    else
+                    {
+                        contact.Tags.Add(tagToBeAdded);
+                        Console.WriteLine($"Tag '{tagToBeAdded}' added.");
+                    }
+                }
+
+                Console.Write("Enter tag to remove (leave empty to skip): ");
+                string tagToBeRemoved = Console.ReadLine();
+                if (!string.IsNullOrWhiteSpace(tagToBeRemoved))
+                {
+                    if (contact.Tags.Contains(tagToBeRemoved, StringComparer.OrdinalIgnoreCase))
+                    {
+                        contact.Tags.Remove(tagToBeRemoved);
+                        Console.WriteLine($"Tag '{tagToBeRemoved}' removed.");
+                    }
+                    else
+                    {
+                        throw new InvalidInputException($"Tag '{tagToBeRemoved}' not found for this contact.");
+                    }
+                }
+
+                Console.WriteLine("Contact updated.");
             }
             else
             {
-                Console.WriteLine("Invalid input. I am calling the police!");
-                return;
+                throw new ContactNotFoundException(id);
             }
         }
 
 
+        public List<Contact> SearchByName(string namePart)
+        {
+            return _contacts.Values
+                .Where(s => s.Name.Contains(namePart, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(s => s.Name)
+                .ToList();
+        }
+
+        public List<Contact> FilterByTag(string tag)
+        {
+            return _contacts.Values
+                .Where(f => f.Tags.Contains(tag, StringComparer.OrdinalIgnoreCase))
+                .OrderBy(f => f.Name)
+                .ToList();
+        }
+
+        public void RemoveContact(int id)
+        {
+            if (_contacts.ContainsKey(id))
+            {
+                _emails.Remove(_contacts[id].Email);
+                _contacts.Remove(id);
+                Console.WriteLine($"Contact with ID {id} has been removed.");
+            }
+            else
+            {
+                throw new ContactNotFoundException(id);
+            }
+        }
+
+        public List<Contact> ListContacts()
+        {
+            return _contacts.Values.OrderBy(l => l.Id).ToList();
+        }
     }
 }
