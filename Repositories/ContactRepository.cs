@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using ContactCatalog.Exceptions;
+using ContactCatalog.Validators;
 using ContactCatalog.Models;
 using ContactCatalog.Services;
 using Microsoft.Extensions.Logging;
 
 namespace ContactCatalog.Repositories
 {
-    public class ContactRepository
+    public class ContactRepository : IContactRepository
     {
         private Dictionary<int, Contact> _contacts = new Dictionary<int, Contact>();
         private HashSet<string> _emails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -41,16 +41,6 @@ namespace ContactCatalog.Repositories
             }
         }
 
-        public bool ExistsId(int id)
-        {
-            return _contacts.ContainsKey(id);
-        }
-
-        public bool ExistsEmail(string email)
-        {
-            return _emails.Contains(email);
-        }
-
         public void UpdateContact(int id)
         {
             if (_contacts.ContainsKey(id))
@@ -72,6 +62,10 @@ namespace ContactCatalog.Repositories
                     if (_emails.Contains(emailToBeUpdated))
                     {
                         throw new DuplicateEmailException(emailToBeUpdated);
+                    }
+                    else if (!EmailValidator.IsValidEmail(emailToBeUpdated))
+                    {
+                        throw new InvalidInputException("Invalid email format.");
                     }
                     else
                     {

@@ -1,20 +1,20 @@
 ﻿using System;
-using ContactCatalog.Exceptions;
 using ContactCatalog.Models;
 using ContactCatalog.Repositories;
+using ContactCatalog.Validators;
 
 namespace ContactCatalog.Services
 {
     public class ContactService
     {
-        private readonly ContactRepository _repository;
+        private readonly IContactRepository _repository;
 
-        public ContactService(ContactRepository repository)
+        public ContactService(IContactRepository repository)
         {
             _repository = repository;
         }
 
-        public void AddContact()
+        public void SaveContact()
         {
             try
             {
@@ -29,7 +29,11 @@ namespace ContactCatalog.Services
 
                 if (string.IsNullOrWhiteSpace(nameToBeAdded) || string.IsNullOrWhiteSpace(emailToBeAdded))
                 {
-                    throw new InvalidInputException("Name and Email cannot be empty.");
+                    throw new InvalidInputException("Name and/or Email cannot be empty.");
+                }
+                else if (!EmailValidator.IsValidEmail(emailToBeAdded))
+                {
+                    throw new InvalidInputException("Invalid email format.");
                 }
                 else
                 {

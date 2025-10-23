@@ -11,7 +11,7 @@ namespace ContactCatalog
     {
         static void Main(string[] args)
         {
-            using var loggerFactory = LoggerFactory.Create(builder => { });
+            using var loggerFactory = LoggerFactory.Create(builder => { builder.AddConsole(); });
             ILogger<ContactRepository> logger = loggerFactory.CreateLogger<ContactRepository>();
 
             var contacts = new Dictionary<int, Contact>();
@@ -39,7 +39,7 @@ namespace ContactCatalog
                 switch (choiceInput)
                 {
                     case "1":
-                        service.AddContact();
+                        service.SaveContact();
                         break;
                     case "2":
                         service.RemoveContact();
@@ -61,7 +61,7 @@ namespace ContactCatalog
                         Console.WriteLine("Exiting Contact Catalog. Goodbye! Come Again!!!");
                         break;
                     default:
-                        Console.WriteLine("Invalid option. :( sadge. Please choose between 1–7.");
+                        Console.WriteLine("Invalid option. Please choose between 1–7.");
                         break;
                 }
             }
