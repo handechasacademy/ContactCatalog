@@ -8,17 +8,17 @@ namespace ContactCatalog.Models
 {
     public class Contact
     {
-        public string Id { get; set; }
+        public int Id { get; set; }
         public string Name { get; set; }
         public string Email { get; set; }
-        public string Tag { get; set; }
+        public List<string> Tags { get; set; } = new ();
 
-        public Contact(string id, string name, string email, string tag)
+        public Contact(int id, string name, string email, List<string> tags)
         {
             Id = id;
             Name = name;
             Email = email;
-            Tag = tag;
+            Tags = tags;
         }
     }
 }
